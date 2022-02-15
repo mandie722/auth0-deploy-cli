@@ -78,6 +78,25 @@ describe('#directory context databases', () => {
       .and.have.property('message', errorMessage);
   });
 
+  const customUsersDBDefaults = {
+    'database.json': `
+      {
+        "name": "users","enabled_clients": ["My SPA"],
+        "options": {
+          "enabledDatabaseCustomization": true,
+          "customScripts": {}
+        }
+      }
+    `,
+    'change_email.js': 'function test(email, callback) {var env = @@env@@};',
+    'change_password.js': 'function test(email, callback) {var env = @@env@@};',
+    'create.js': 'function test(email, callback) {var env = @@env@@};',
+    'delete.js': 'function test(email, callback) {var env = @@env@@};',
+    'get_user.js': 'function test(email, callback) {var env = @@env@@};',
+    'login.js': 'function test(email, callback) {var env = @@env@@};',
+    'verify.js': 'function test(email, callback) {var env = @@env@@};'
+  };
+
   const customUsersDB = {
     'database.json': `
       {
@@ -143,6 +162,37 @@ describe('#directory context databases', () => {
     const repoDir = path.join(testDataDir, 'directory', 'databases5');
     cleanThenMkdir(repoDir);
     createDir(path.join(repoDir, constants.DATABASE_CONNECTIONS_DIRECTORY), { users: db });
+
+    const config = { AUTH0_INPUT_FILE: repoDir, AUTH0_KEYWORD_REPLACE_MAPPINGS: { env: 'test' } };
+    const context = new Context(config, mockMgmtClient());
+    await context.load();
+
+    expect(context.assets.databases).to.deep.equal([
+      {
+        enabled_clients: [
+          'My SPA'
+        ],
+        name: 'users',
+        options: {
+          customScripts: {
+            change_email: 'function test(email, callback) {var env = "test"};',
+            change_password: 'function test(email, callback) {var env = "test"};',
+            create: 'function test(email, callback) {var env = "test"};',
+            delete: 'function test(email, callback) {var env = "test"};',
+            get_user: 'function test(email, callback) {var env = "test"};',
+            login: 'function test(email, callback) {var env = "test"};',
+            verify: 'function test(email, callback) {var env = "test"};'
+          },
+          enabledDatabaseCustomization: true
+        }
+      }
+    ]);
+  });
+
+  it('should process custom databases with default script names', async () => {
+    const repoDir = path.join(testDataDir, 'directory', 'databases6');
+    cleanThenMkdir(repoDir);
+    createDir(path.join(repoDir, constants.DATABASE_CONNECTIONS_DIRECTORY), { users: customUsersDBDefaults });
 
     const config = { AUTH0_INPUT_FILE: repoDir, AUTH0_KEYWORD_REPLACE_MAPPINGS: { env: 'test' } };
     const context = new Context(config, mockMgmtClient());

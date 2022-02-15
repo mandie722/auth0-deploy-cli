@@ -29,29 +29,20 @@ function getDatabase(folder, mappings) {
     return {};
   }
 
-  const database = {
-    ...metaData,
-    options: {
-      ...metaData.options,
-      // customScripts option only written if there are scripts
-      ...(metaData.customScripts && {
-        customScripts: metaData.customScripts
-      })
-    }
-  };
+  const database = metaData;
 
   // If any customScripts configured then load content of files
+  // Handle default filenames
   if (database.options.customScripts) {
-    Object.entries(database.options.customScripts).forEach(([ name, script ]) => {
-      if (!constants.DATABASE_SCRIPTS.includes(name)) {
-        // skip invalid keys in customScripts object
-        log.warn('Skipping invalid database configuration: ' + name);
-      } else {
-        database.options.customScripts[name] = loadFile(
-          path.join(folder, script),
-          mappings
-        );
+    constants.DATABASE_SCRIPTS.forEach((name) => {
+      let script = name + '.js';
+      if (Object.keys(database.options.customScripts).includes(name)) {
+        script = database.options.customScripts[name];
       }
+      database.options.customScripts[name] = loadFile(
+        path.join(folder, script),
+        mappings
+      );
     });
   }
 
